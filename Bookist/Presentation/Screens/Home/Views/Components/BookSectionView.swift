@@ -3,6 +3,7 @@ import SwiftUI
 struct BookSectionView: View {
     let title: String
     let books: [Book]
+    let horizontalPadding: CGFloat
     var onBookTap: (Book) -> Void
     var onScrollEnd: (() -> Void)? = nil
     
@@ -11,7 +12,8 @@ struct BookSectionView: View {
             Text(title)
                 .textStyle(.title2)
                 .foregroundColor(AppColors.primaryText)
-                .padding(.horizontal, 16)
+                .padding(.leading, horizontalPadding)
+                .padding(.trailing, horizontalPadding)
                 .padding(.top, 0)
             
             ScrollView(.horizontal, showsIndicators: false) {
@@ -28,8 +30,10 @@ struct BookSectionView: View {
                             }
                     }
                 }
-                .padding(.horizontal, 16)
+                .padding(.leading, horizontalPadding)
+                .padding(.trailing, horizontalPadding)
             }
+            .scrollClipDisabled(true)
         }
     }
 }

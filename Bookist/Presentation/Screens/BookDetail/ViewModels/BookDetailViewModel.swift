@@ -5,6 +5,7 @@ import SwiftData
 class BookDetailViewModel: ObservableObject {
     @Published var state: BookDetailViewState = .idle
     @Published var isSaved: Bool = false
+    @Published var isStarted: Bool = false
     @Published var existingReview: ReviewEntity?
     
     private let context = SwiftDataManager.shared.container.mainContext
@@ -22,6 +23,7 @@ class BookDetailViewModel: ObservableObject {
         // Initial setup
         loadSaveState()
         loadExistingReview()
+        checkIfStarted()
     }
     
     convenience init(bookId: Int, previewBook: Book? = nil) {
@@ -42,6 +44,19 @@ class BookDetailViewModel: ObservableObject {
             isSaved = !matches.isEmpty
         } catch {
             print("Error loading save state: \(error)")
+        }
+    }
+    
+    func checkIfStarted() {
+        let currentId = bookId
+        let descriptor = FetchDescriptor<ReadingHistoryEntity>(
+            predicate: #Predicate<ReadingHistoryEntity> { $0.bookId == currentId }
+        )
+        do {
+            let matches = try context.fetch(descriptor)
+            isStarted = !matches.isEmpty
+        } catch {
+            print("Error checking history: \(error)")
         }
     }
     
@@ -185,6 +200,9 @@ class BookDetailViewModel: ObservableObject {
                 Task {
                     let historyRepo = ReadingHistoryRepository()
                     try? await historyRepo.saveBookToHistory(book: book)
+                    await MainActor.run {
+                        self.isStarted = true
+                    }
                 }
             }
 
@@ -225,7 +243,7 @@ class BookDetailViewModel: ObservableObject {
     func getButtonConfig(selectedTab: Int, currentRating: Int, currentText: String, onStartReading: @escaping () -> Void) -> ButtonConfig {
         if selectedTab == 0 {
             return ButtonConfig(
-                title: "Start Reading",
+                title: isStarted ? "Continue Reading" : "Start Reading",
                 isEnabled: true,
                 action: { [weak self] in
                     self?.markAsRead()

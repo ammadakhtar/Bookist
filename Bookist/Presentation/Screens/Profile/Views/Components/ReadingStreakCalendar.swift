@@ -3,6 +3,7 @@ import SwiftData
 
 struct ReadingStreakCalendar: View {
     @State private var selectedMonth = Date()
+    @State private var readDatesThisMonth: [Int: (isRead: Bool, bookCount: Int)] = [:]
     
     @Query private var readStatuses: [BookReadStatusEntity]
     
@@ -12,28 +13,6 @@ struct ReadingStreakCalendar: View {
         let symbols = calendar.shortWeekdaySymbols
         let firstDay = calendar.firstWeekday - 1
         return Array(symbols[firstDay...] + symbols[..<firstDay])
-    }
-    
-    private var readDatesThisMonth: [Int: (isRead: Bool, bookCount: Int)] {
-        let components = calendar.dateComponents([.year, .month], from: selectedMonth)
-        let filtered = readStatuses.filter {
-            let statusComponents = calendar.dateComponents([.year, .month, .day], from: $0.finishedAt)
-            return statusComponents.year == components.year && statusComponents.month == components.month && $0.finishedAt <= Date()
-        }
-        
-        var counts: [Int: (isRead: Bool, bookCount: Int)] = [:]
-        for status in filtered {
-            let day = calendar.component(.day, from: status.finishedAt)
-            let current = counts[day, default: (false, 0)]
-            
-            // It's a "read day" if ANY status exists for that day
-            // Only increment bookCount if bookId > 0
-            counts[day] = (
-                isRead: true,
-                bookCount: current.bookCount + (status.bookId > 0 ? 1 : 0)
-            )
-        }
-        return counts
     }
     
     var body: some View {
@@ -148,6 +127,44 @@ struct ReadingStreakCalendar: View {
                 .fill(Color.white)
                 .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 4)
         )
+        .task(id: selectedMonth) {
+            // Compute read dates asynchronously to avoid blocking the main thread
+            await computeReadDates()
+        }
+        .task(id: readStatuses.count) {
+            // Recompute when read statuses change
+            await computeReadDates()
+        }
+    }
+    
+    // MARK: - Async Computation
+    private func computeReadDates() async {
+        let dates = await Task.detached(priority: .userInitiated) { [selectedMonth, readStatuses] in
+            let calendar = Calendar.current
+            let components = calendar.dateComponents([.year, .month], from: selectedMonth)
+            let filtered = readStatuses.filter {
+                let statusComponents = calendar.dateComponents([.year, .month, .day], from: $0.finishedAt)
+                return statusComponents.year == components.year && 
+                       statusComponents.month == components.month && 
+                       $0.finishedAt <= Date()
+            }
+            
+            var counts: [Int: (isRead: Bool, bookCount: Int)] = [:]
+            for status in filtered {
+                let day = calendar.component(.day, from: status.finishedAt)
+                let current = counts[day, default: (false, 0)]
+                
+                // It's a "read day" if ANY status exists for that day
+                // Only increment bookCount if bookId > 0
+                counts[day] = (
+                    isRead: true,
+                    bookCount: current.bookCount + (status.bookId > 0 ? 1 : 0)
+                )
+            }
+            return counts
+        }.value
+        
+        readDatesThisMonth = dates
     }
     
     // MARK: - Helpers

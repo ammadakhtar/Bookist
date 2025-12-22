@@ -11,9 +11,24 @@ struct HomeView: View {
     
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     
+    private var contentHorizontalPadding: CGFloat {
+        16
+    }
+    
     private var columns: [GridItem] {
         let count = horizontalSizeClass == .regular ? 5 : 3
         return Array(repeating: GridItem(.flexible(), spacing: 16), count: count)
+    }
+    
+    private func gridContentPadding(screenWidth: CGFloat) -> CGFloat {
+        let count: CGFloat = horizontalSizeClass == .regular ? 5 : 3
+        let totalSpacing = (count - 1) * 16
+        let availableWidth = screenWidth - 32 // 16 leading + 16 trailing
+        let columnWidth = (availableWidth - totalSpacing) / count
+        let itemWidth: CGFloat = 120
+        
+        let centeringOffset = max(0, (columnWidth - itemWidth) / 2)
+        return 16 + centeringOffset
     }
     
     var body: some View {
@@ -21,26 +36,42 @@ struct HomeView: View {
             ZStack(alignment: .top) {
                 Color.white.ignoresSafeArea() // Strict White Background
                 
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 0) {
-                        // Spacer from top of screen to bottom of header + 24px padding
-                        Color.clear.frame(height: headerBottomY + 24)
-                        
-                        let recentlyReadVisible = !viewModel.recentlyReadBooks.isEmpty && selectedTab != "Trending"
-                        
+                GeometryReader { geometry in
+                    let dynamicPadding = gridContentPadding(screenWidth: geometry.size.width)
+                    
+                    ScrollView(showsIndicators: false) {
                         VStack(spacing: 0) {
-                            // Recently Read Section
-                            if recentlyReadVisible {
-                                BookSectionView(
-                                    title: "Recently Read",
-                                    books: viewModel.recentlyReadBooks,
-                                    onBookTap: { book in
-                                        path.append(book)
+                            // Spacer from top of screen to bottom of header + 24px padding
+                            Color.clear.frame(height: headerBottomY + 24)
+                            
+                            let recentlyReadVisible = !viewModel.recentlyReadBooks.isEmpty && selectedTab != "Trending"
+                            
+                            VStack(spacing: 0) {
+                                // Recently Read Section
+                                if recentlyReadVisible {
+                                    VStack(alignment: .leading, spacing: 16) {
+                                        Text("Recently Read")
+                                            .textStyle(.title2)
+                                            .foregroundColor(AppColors.primaryText)
+                                            .padding(.leading, contentHorizontalPadding)
+                                            .padding(.trailing, contentHorizontalPadding)
+                                        
+                                        ScrollView(.horizontal, showsIndicators: false) {
+                                            LazyHGrid(rows: [GridItem(.flexible())], spacing: 16) {
+                                                ForEach(viewModel.recentlyReadBooks) { book in
+                                                    BookCard(book: book)
+                                                        .onTapGesture {
+                                                            path.append(book)
+                                                        }
+                                                }
+                                            }
+                                            .scrollTargetLayout()
+                                        }
+                                        .contentMargins(.horizontal, dynamicPadding, for: .scrollContent)
                                     }
-                                )
-                                .padding(.top, 0) // Gap is from header spacer
-                                .transition(.opacity.combined(with: .scale(scale: 0.95)))
-                            }
+                                    .padding(.top, 0) // Gap is from header spacer
+                                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
+                                }
                             
                             // Popular Books Section
                             // Always use Grid Layout for Popular Books
@@ -48,7 +79,8 @@ struct HomeView: View {
                                 Text("Popular Books")
                                     .textStyle(.title2)
                                     .foregroundColor(Color.black) // Strict Black
-                                    .padding(.horizontal, 16)
+                                    .padding(.leading, contentHorizontalPadding)
+                                    .padding(.trailing, contentHorizontalPadding)
                                     .padding(.top, recentlyReadVisible ? 24 : 0) // Precise gap
                                 
                                 // Real Data Grid
@@ -77,7 +109,7 @@ struct HomeView: View {
                                             }
                                         }
                                     }
-                                    .padding(.horizontal, 16)
+                                    .padding(.horizontal, contentHorizontalPadding)
                                     .padding(.bottom, 24)
                                 }
                                 
@@ -108,6 +140,7 @@ struct HomeView: View {
                 }
                 .ignoresSafeArea(.all, edges: .top) // Allow scrollview to go under header visually
                 .opacity(isSearchActive ? 0 : 1) // Only fade content
+                }
                 
                 // Fixed Header with MaxY Measurement (Always visible, handles its own transitions)
                 HeaderView(

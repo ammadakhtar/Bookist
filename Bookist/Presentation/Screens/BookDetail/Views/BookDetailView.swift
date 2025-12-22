@@ -7,6 +7,7 @@ struct BookDetailView: View {
     @State private var selectedTab = 0
     @State private var userRating = 0
     @State private var userReview = ""
+    @State private var showReader = false
     @Environment(\.dismiss) private var dismiss
     
     init(bookId: Int, previewBook: Book? = nil) {
@@ -65,6 +66,12 @@ struct BookDetailView: View {
                 userReview = review.reviewText ?? ""
             }
         }
+        .navigationDestination(isPresented: $showReader) {
+            if let book = previewBook {
+                BookReaderView(book: book)
+            }
+        }
+        .tint(.black) // Ensure pushed views have black accent color
     }
     
     // MARK: - Sharing Logic
@@ -208,7 +215,7 @@ struct BookDetailView: View {
                     currentRating: userRating,
                     currentText: userReview,
                     onStartReading: {
-                        // Action for start reading
+                        showReader = true
                     }
                 )
                 

@@ -4,6 +4,8 @@ struct ProfileView: View {
     @StateObject private var viewModel = ProfileViewModel()
     @State private var selectedTab = 0
     @State private var showingAvatarSheet = false
+    @State private var localAvatarId = 0
+    @State private var localUserName = ""
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
@@ -12,7 +14,7 @@ struct ProfileView: View {
             
             VStack(spacing: 0) {
                 ProfileHeaderView(
-                    userName: $viewModel.userName,
+                    userName: $localUserName,
                     avatarId: $viewModel.avatarId,
                     booksRead: viewModel.booksReadCount,
                     reviewed: viewModel.reviewsCount,
@@ -23,7 +25,13 @@ struct ProfileView: View {
                         dismiss()
                     },
                     onAvatarTap: {
+                        localAvatarId = viewModel.avatarId
                         showingAvatarSheet = true
+                    },
+                    onNameEditingChanged: { isEditing in
+                        if !isEditing {
+                            viewModel.userName = localUserName
+                        }
                     }
                 )
                 
@@ -36,7 +44,7 @@ struct ProfileView: View {
                 }
                 
                 ScrollView {
-                    VStack(spacing: 24) {
+                    LazyVStack(spacing: 24, pinnedViews: []) {
                         if selectedTab == 0 {
                             // Stats
                             GoalsCard(current: viewModel.booksReadCount, target: viewModel.readingGoal)
@@ -44,13 +52,16 @@ struct ProfileView: View {
                             FinishedCard(count: viewModel.booksReadCount)
                             
                             ReadingStreakCalendar()
+                                .id("calendar-\(selectedTab)")
                             
                         } else if selectedTab == 1 {
                             // Lists (Saved)
                             SavedBooksListView()
+                                .id("saved-\(selectedTab)")
                         } else if selectedTab == 2 {
                              // Reviews
                             ReviewsListView()
+                                .id("reviews-\(selectedTab)")
                         }
                     }
                     .padding(20)
@@ -60,9 +71,21 @@ struct ProfileView: View {
         .navigationBarHidden(true)
         .onAppear {
             viewModel.loadProfile()
+            localUserName = viewModel.userName
+            // Pre-load all avatar images to avoid dyld lookup during sheet animation
+            Task.detached(priority: .background) {
+                for id in 1...42 {
+                    _ = UIImage(named: "\(id)")
+                }
+            }
         }
         .sheet(isPresented: $showingAvatarSheet) {
-            AvatarSelectionSheet(selectedAvatarId: $viewModel.avatarId)
+            AvatarSelectionSheet(selectedAvatarId: $localAvatarId)
+                .onDisappear {
+                    if localAvatarId != viewModel.avatarId {
+                        viewModel.avatarId = localAvatarId
+                    }
+                }
         }
     }
 }

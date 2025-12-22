@@ -5,24 +5,37 @@ struct ReviewsListView: View {
     @Query(filter: #Predicate<BookEntity> { $0.review != nil }, sort: \BookEntity.updatedAt, order: .reverse) 
     private var books: [BookEntity]
     
+    @State private var isLoaded = false
+    
     var body: some View {
-        if books.isEmpty {
-            VStack(spacing: 16) {
-                Image(systemName: "star")
-                    .font(.system(size: 48))
-                    .foregroundColor(AppColors.secondaryText.opacity(0.3))
-                Text("No reviews yet")
-                    .textStyle(.body)
-                    .foregroundColor(AppColors.secondaryText)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.top, 40)
-        } else {
-            LazyVStack(spacing: 0) {
-                ForEach(books) { book in
-                    ReviewRow(book: book)
+        Group {
+            if !isLoaded {
+                ProgressView()
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 40)
+            } else if books.isEmpty {
+                VStack(spacing: 16) {
+                    Image(systemName: "star")
+                        .font(.system(size: 48))
+                        .foregroundColor(AppColors.secondaryText.opacity(0.3))
+                    Text("No reviews yet")
+                        .textStyle(.body)
+                        .foregroundColor(AppColors.secondaryText)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.top, 40)
+            } else {
+                LazyVStack(spacing: 0) {
+                    ForEach(books) { book in
+                        ReviewRow(book: book)
+                    }
                 }
             }
+        }
+        .task {
+            // Small delay to let sheet animation complete
+            try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
+            isLoaded = true
         }
     }
 }

@@ -61,7 +61,7 @@ class HomeViewModel: ObservableObject {
                 let books = try await fetchBooksUseCase.execute(page: 1)
                 
                 // Update results and transition state
-                popularBooks = books 
+                popularBooks = books.shuffled()
                 state = .loaded
             } catch {
                 state = .error(error.localizedDescription)
@@ -83,7 +83,7 @@ class HomeViewModel: ObservableObject {
                 } else {
                     // Deduplicate: Filter out books that are already in the list
                     let existingIDs = Set(popularBooks.map { $0.id })
-                    let uniqueBooks = newBooks.filter { !existingIDs.contains($0.id) }
+                    let uniqueBooks = newBooks.shuffled().filter { !existingIDs.contains($0.id) }
                     
                     if uniqueBooks.isEmpty {
                         // If all fetched books are duplicates, maybe we reached end strictly?

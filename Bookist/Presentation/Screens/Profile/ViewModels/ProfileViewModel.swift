@@ -136,30 +136,40 @@ class ProfileViewModel: ObservableObject {
     }
     
     private func saveName(_ name: String) {
-        let descriptor = FetchDescriptor<UserProfileEntity>()
-        do {
-            let profiles = try context.fetch(descriptor)
-            if let profile = profiles.first {
-                profile.name = name
-                profile.updatedAt = Date()
-                try context.save()
+        Task.detached(priority: .background) {
+            // Create a background ModelContext for off-main-thread operations
+            let context = ModelContext(SwiftDataManager.shared.container)
+            let descriptor = FetchDescriptor<UserProfileEntity>()
+            
+            do {
+                let profiles = try context.fetch(descriptor)
+                if let profile = profiles.first {
+                    profile.name = name
+                    profile.updatedAt = Date()
+                    try context.save()
+                }
+            } catch {
+                print("Failed to save name: \(error)")
             }
-        } catch {
-            print("Failed to save name: \(error)")
         }
     }
     
     private func saveAvatar(_ id: Int) {
-        let descriptor = FetchDescriptor<UserProfileEntity>()
-        do {
-            let profiles = try context.fetch(descriptor)
-            if let profile = profiles.first {
-                profile.avatarId = id
-                profile.updatedAt = Date()
-                try context.save()
+        Task.detached(priority: .background) {
+            // Create a background ModelContext for off-main-thread operations
+            let context = ModelContext(SwiftDataManager.shared.container)
+            let descriptor = FetchDescriptor<UserProfileEntity>()
+            
+            do {
+                let profiles = try context.fetch(descriptor)
+                if let profile = profiles.first {
+                    profile.avatarId = id
+                    profile.updatedAt = Date()
+                    try context.save()
+                }
+            } catch {
+                print("Failed to save avatar: \(error)")
             }
-        } catch {
-            print("Failed to save avatar: \(error)")
         }
     }
 }
