@@ -6,11 +6,13 @@ struct HeaderView: View {
     var streakData: [ReadingStreak]
     var onSearchTap: () -> Void
     var onProfileTap: () -> Void
+    var onPaywallTap: () -> Void
     var onMarkRead: () -> Void
     var namespace: Namespace.ID // For matched geometry
     var isSearchActive: Bool
     
     @Query private var userProfiles: [UserProfileEntity]
+    @ObservedObject private var subscriptionManager = SubscriptionManager.shared
     
     private var avatarId: Int {
         userProfiles.first?.avatarId ?? 0
@@ -47,6 +49,25 @@ struct HeaderView: View {
                                         .matchedGeometryEffect(id: "SearchBackground", in: namespace)
                                 )
                         }
+                    }
+                    
+                    // Premium/Paywall Button (between search and profile)
+                    if !isSearchActive {
+                        Button(action: {
+                            let generator = UIImpactFeedbackGenerator(style: .medium)
+                            generator.impactOccurred()
+                            onPaywallTap()
+                        }) {
+                            Image(systemName: subscriptionManager.isPremium ? "crown.fill" : "lock.fill")
+                                .font(.system(size: 20, weight: .medium))
+                                .foregroundColor(.white)
+                                .frame(width: 40, height: 40)
+                                .background(
+                                    Circle()
+                                        .fill(Color.white.opacity(0.08))
+                                )
+                        }
+                        .transition(.move(edge: .trailing).combined(with: .opacity))
                     }
                     
                     // Profile Button

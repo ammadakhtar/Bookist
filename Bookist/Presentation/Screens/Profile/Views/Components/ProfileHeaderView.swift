@@ -8,7 +8,6 @@ struct ProfileHeaderView: View {
     var onSettingsTap: () -> Void
     var onBackTap: () -> Void
     var onAvatarTap: () -> Void
-    var onNameEditingChanged: (Bool) -> Void
     
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -68,7 +67,7 @@ struct ProfileHeaderView: View {
                 
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 8) {
-                        TextField("Enter your name", text: $userName, onEditingChanged: onNameEditingChanged)
+                        TextField("Enter your name", text: $userName)
                             .font(.system(size: 20, weight: .bold))
                             .foregroundColor(.white)
                     }

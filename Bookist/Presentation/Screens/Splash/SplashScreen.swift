@@ -10,6 +10,15 @@ struct SplashScreen: View {
     @State private var showHome = false
     @State private var splashOpacity: Double = 1
     @State private var displayText: String = ""
+    @State private var attRequested = false
+    @State private var shouldShowAppOpenAd = false
+    
+    // Callback to notify when splash completes
+    let onComplete: (() -> Void)?
+    
+    init(onComplete: (() -> Void)? = nil) {
+        self.onComplete = onComplete
+    }
     
     // Daily motivational reading quotes
     private let motivationalTexts = [
@@ -108,16 +117,62 @@ struct SplashScreen: View {
             }
         }
         
-        // Phase 3: Hold for viewing (total 3.5s)
-        // Phase 4: Dissolve and show home (3.5-4.1s)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.5) {
-            withAnimation(.easeOut(duration: 0.6)) {
-                splashOpacity = 0
+        // Phase 3: Request ATT permission after splash animations (2.5s)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+            requestATTAndPrepareAds()
+        }
+    }
+    
+    private func requestATTAndPrepareAds() {
+        // Request ATT first (this is the FIRST permission we ask for)
+        AdsConsentManager.shared.checkAdsState {
+            // After ATT decision, request notification permission
+            DispatchQueue.main.async {
+                attRequested = true
+                requestNotificationPermission()
             }
+        }
+    }
+    
+    private func requestNotificationPermission() {
+        // Request notification permission after ATT
+        Task {
+            let granted = await NotificationManager.shared.requestAuthorization()
+            print(granted ? "✅ Notification permission granted" : "❌ Notification permission denied")
             
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                showHome = true
+            // After notification permission, fetch and show app open ad
+            DispatchQueue.main.async {
+                fetchAndShowAppOpenAd()
             }
+        }
+    }
+    
+    private func fetchAndShowAppOpenAd() {
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let rootVC = windowScene.windows.first?.rootViewController else {
+            // No root VC, skip to home
+            transitionToHome()
+            return
+        }
+        
+        // Load and show app open ad immediately on app launch
+        AdManager.shared.loadAndShowAppOpenAd(from: rootVC) {
+            // Ad dismissed, show home
+            DispatchQueue.main.async {
+                transitionToHome()
+            }
+        }
+    }
+    
+    private func transitionToHome() {
+        withAnimation(.easeOut(duration: 0.6)) {
+            splashOpacity = 0
+        }
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            showHome = true
+            // Notify that splash is complete
+            onComplete?()
         }
     }
 }

@@ -8,6 +8,7 @@ struct BookDetailView: View {
     @State private var userRating = 0
     @State private var userReview = ""
     @State private var showReader = false
+    @ObservedObject private var adManager = AdManager.shared
     @Environment(\.dismiss) private var dismiss
     
     init(bookId: Int, previewBook: Book? = nil) {
@@ -60,6 +61,9 @@ struct BookDetailView: View {
             .ignoresSafeArea(edges: .top)
         }
         .navigationBarHidden(true)
+        .onAppear {
+            adManager.preloadInterstitialForSection(.bookReadAction)
+        }
         .onReceive(viewModel.$existingReview) { review in
             if let review = review {
                 userRating = review.rating
@@ -72,6 +76,55 @@ struct BookDetailView: View {
             }
         }
         .tint(.black) // Ensure pushed views have black accent color
+    }
+    
+    // MARK: - Ad Handling
+    private func handleActionButton(isReviewTab: Bool, action: @escaping () -> Void) {
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let rootVC = windowScene.windows.first?.rootViewController else {
+            action()
+            return
+        }
+        
+        // For Save Review: perform action FIRST (to avoid losing data if user kills app)
+        if isReviewTab {
+            action() // Save review immediately
+            
+            // Then show ad
+            _ = adManager.showPreloadedInterstitial(
+                for: .bookReadAction,
+                from: rootVC,
+                onSuccess: {
+                    print("✅ Ad shown after review save")
+                },
+                onFailure: {
+                    print("❌ No ad after review save")
+                }
+            )
+        } else {
+            // For Start/Continue Reading: show ad first, then navigate
+            let shown = adManager.showPreloadedInterstitial(
+                for: .bookReadAction,
+                from: rootVC,
+                onSuccess: {
+                    // Ad dismissed, perform action
+                    DispatchQueue.main.async {
+                        action()
+                    }
+                },
+                onFailure: {
+                    // No ad, perform action directly
+                    DispatchQueue.main.async {
+                        action()
+                    }
+                }
+            )
+            
+            if !shown {
+                // No ad available, perform action directly
+                action()
+            }
+        }
     }
     
     // MARK: - Sharing Logic
@@ -219,7 +272,9 @@ struct BookDetailView: View {
                     }
                 )
                 
-                Button(action: config.action) {
+                Button(action: {
+                    handleActionButton(isReviewTab: selectedTab == 1, action: config.action)
+                }) {
                     Text(config.title)
                         .textStyle(.headline)
                         .foregroundColor(config.isEnabled ? AppColors.background : Color.white.opacity(0.6))

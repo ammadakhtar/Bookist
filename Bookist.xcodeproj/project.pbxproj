@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		6C34DB412EFBF29B0060EBC0 /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = 6C34DB402EFBF29B0060EBC0 /* GoogleMobileAds */; };
 		6CE883FF2EF982D400383B24 /* ReadiumAdapterGCDWebServer in Frameworks */ = {isa = PBXBuildFile; productRef = 6CE883FE2EF982D400383B24 /* ReadiumAdapterGCDWebServer */; };
 		6CE884012EF982D400383B24 /* ReadiumNavigator in Frameworks */ = {isa = PBXBuildFile; productRef = 6CE884002EF982D400383B24 /* ReadiumNavigator */; };
 		6CE884032EF982D400383B24 /* ReadiumShared in Frameworks */ = {isa = PBXBuildFile; productRef = 6CE884022EF982D400383B24 /* ReadiumShared */; };
@@ -45,6 +46,7 @@
 			files = (
 				6CE884012EF982D400383B24 /* ReadiumNavigator in Frameworks */,
 				6CE884052EF982D400383B24 /* ReadiumStreamer in Frameworks */,
+				6C34DB412EFBF29B0060EBC0 /* GoogleMobileAds in Frameworks */,
 				6CE884032EF982D400383B24 /* ReadiumShared in Frameworks */,
 				6CE883FF2EF982D400383B24 /* ReadiumAdapterGCDWebServer in Frameworks */,
 			);
@@ -93,6 +95,7 @@
 				6CE884002EF982D400383B24 /* ReadiumNavigator */,
 				6CE884022EF982D400383B24 /* ReadiumShared */,
 				6CE884042EF982D400383B24 /* ReadiumStreamer */,
+				6C34DB402EFBF29B0060EBC0 /* GoogleMobileAds */,
 			);
 			productName = Bookist;
 			productReference = 6C903C0D2EF814A3000881B2 /* Bookist.app */;
@@ -124,6 +127,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				6CE883FD2EF982D400383B24 /* XCRemoteSwiftPackageReference "swift-toolkit" */,
+				6C34DB3F2EFBF29B0060EBC0 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 6C903C0E2EF814A3000881B2 /* Products */;
@@ -282,15 +286,17 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = U3K2KK6JPR;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Bookist/Info.plist;
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_NSUserTrackingUsageDescription = "This app uses your data to provide personalized ads and improve your experience.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIRequiresFullScreen = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -301,6 +307,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.Bookist;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
@@ -316,15 +323,17 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = U3K2KK6JPR;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Bookist/Info.plist;
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_NSUserTrackingUsageDescription = "This app uses your data to provide personalized ads and improve your experience.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UIRequiresFullScreen = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
@@ -335,6 +344,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.Bookist;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
@@ -369,6 +379,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		6C34DB3F2EFBF29B0060EBC0 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/googleads/swift-package-manager-google-mobile-ads.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.14.0;
+			};
+		};
 		6CE883FD2EF982D400383B24 /* XCRemoteSwiftPackageReference "swift-toolkit" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/readium/swift-toolkit.git";
@@ -380,6 +398,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		6C34DB402EFBF29B0060EBC0 /* GoogleMobileAds */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 6C34DB3F2EFBF29B0060EBC0 /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */;
+			productName = GoogleMobileAds;
+		};
 		6CE883FE2EF982D400383B24 /* ReadiumAdapterGCDWebServer */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 6CE883FD2EF982D400383B24 /* XCRemoteSwiftPackageReference "swift-toolkit" */;

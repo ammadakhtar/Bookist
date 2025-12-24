@@ -13,6 +13,7 @@ class SwiftDataManager {
             SubjectEntity.self,
             BookshelfEntity.self,
             ReadingHistoryEntity.self,
+            SearchHistoryEntity.self,
             SavedBookEntity.self,
             ReviewEntity.self,
             ReadingStreakEntity.self,

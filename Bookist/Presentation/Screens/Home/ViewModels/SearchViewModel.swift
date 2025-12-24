@@ -14,6 +14,7 @@ class SearchViewModel: ObservableObject {
     private let fetchBooksUseCase: FetchBooksUseCaseProtocol
     private let searchHistoryRepository: SearchHistoryRepositoryProtocol
     private var cancellables = Set<AnyCancellable>()
+    private var historyLoadTask: Task<Void, Never>?
     
     init(fetchBooksUseCase: FetchBooksUseCaseProtocol? = nil,
          searchHistoryRepository: SearchHistoryRepositoryProtocol? = nil) {
@@ -23,8 +24,6 @@ class SearchViewModel: ObservableObject {
         
         self.fetchBooksUseCase = fetchBooksUseCase ?? FetchBooksUseCase(repository: bookRepo)
         self.searchHistoryRepository = searchHistoryRepository ?? SearchHistoryRepository()
-        
-        refreshHistory()
     }
     
     private var searchTask: Task<Void, Never>?
@@ -83,26 +82,36 @@ class SearchViewModel: ObservableObject {
     }
     
     func addToHistory(query: String) {
+        let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedQuery.isEmpty else { return }
+
         Task {
-            try? await searchHistoryRepository.add(query: query)
-            refreshHistory()
+            try? await searchHistoryRepository.add(query: trimmedQuery)
+            await refreshHistory()
         }
     }
     
-    func refreshHistory() {
-        Task {
+    func refreshHistory() async {
+        historyLoadTask?.cancel()
+        historyLoadTask = Task {
             do {
-                self.history = try await searchHistoryRepository.getHistory()
+                let fetchedHistory = try await searchHistoryRepository.getHistory()
+                if !Task.isCancelled {
+                    self.history = fetchedHistory
+                }
             } catch {
-                print("Failed to fetch history: \(error)")
+                if !Task.isCancelled {
+                    print("Failed to fetch history: \(error)")
+                }
             }
         }
+        await historyLoadTask?.value
     }
     
     func clearHistory() {
         Task {
             try? await searchHistoryRepository.clearHistory()
-            refreshHistory()
+            await refreshHistory()
         }
     }
 }

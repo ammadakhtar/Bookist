@@ -36,40 +36,60 @@ class ProfileViewModel: ObservableObject {
             .store(in: &cancellables)
     }
     
-    func loadProfile() {
-        let descriptor = FetchDescriptor<UserProfileEntity>()
-        do {
-            let profiles = try context.fetch(descriptor)
-            if let profile = profiles.first {
-                userName = profile.name
-                avatarId = profile.avatarId ?? 0
-                readingGoal = profile.yearlyReadingGoal
-                
-                // Recalculate accurately from DB - only count real books (bookId > 0)
-                let readStatusDescriptor = FetchDescriptor<BookReadStatusEntity>(
-                    predicate: #Predicate<BookReadStatusEntity> { $0.bookId > 0 }
-                )
-                let reviewsDescriptor = FetchDescriptor<ReviewEntity>()
-                booksReadCount = (try? context.fetchCount(readStatusDescriptor)) ?? profile.booksReadCount
-                reviewsCount = (try? context.fetchCount(reviewsDescriptor)) ?? profile.reviewsCount
-                
-                state = .loaded(profile)
-                
-                // Trigger repair for orphans
-                repairData()
-            } else {
-                // ... same old logic
-                let newProfile = UserProfileEntity()
-                newProfile.avatarId = 0
-                context.insert(newProfile)
-                try context.save()
-                userName = newProfile.name
-                avatarId = 0
-                state = .loaded(newProfile)
+    func loadProfile() async {
+        await Task.detached(priority: .userInitiated) {
+            let context = ModelContext(SwiftDataManager.shared.container)
+            let descriptor = FetchDescriptor<UserProfileEntity>()
+            
+            do {
+                let profiles = try context.fetch(descriptor)
+                if let profile = profiles.first {
+                    let name = profile.name
+                    let avatar = profile.avatarId ?? 0
+                    let goal = profile.yearlyReadingGoal
+                    
+                    // Recalculate accurately from DB - only count real books (bookId > 0)
+                    let readStatusDescriptor = FetchDescriptor<BookReadStatusEntity>(
+                        predicate: #Predicate<BookReadStatusEntity> { $0.bookId > 0 }
+                    )
+                    let reviewsDescriptor = FetchDescriptor<ReviewEntity>()
+                    let booksRead = (try? context.fetchCount(readStatusDescriptor)) ?? profile.booksReadCount
+                    let reviews = (try? context.fetchCount(reviewsDescriptor)) ?? profile.reviewsCount
+                    
+                    await MainActor.run {
+                        self.userName = name
+                        self.avatarId = avatar
+                        self.readingGoal = goal
+                        self.booksReadCount = booksRead
+                        self.reviewsCount = reviews
+                        self.state = .loading
+                    }
+                    
+                    // Trigger repair for orphans
+                    await self.repairData()
+                } else {
+                    // Create new profile
+                    let newProfile = UserProfileEntity()
+                    newProfile.avatarId = 0
+                    context.insert(newProfile)
+                    try? context.save()
+                    
+                    let newName = newProfile.name
+                    let newAvatar = 0
+                    
+                    await MainActor.run {
+                        self.userName = newName
+                        self.avatarId = newAvatar
+                        self.state = .idle
+                    }
+                }
+            } catch {
+                let errorMessage = error.localizedDescription
+                await MainActor.run {
+                    self.state = .error(errorMessage)
+                }
             }
-        } catch {
-            state = .error(error.localizedDescription)
-        }
+        }.value
     }
     
     func repairData() {

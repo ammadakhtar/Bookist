@@ -37,8 +37,15 @@ struct SearchView: View {
                                 .autocorrectionDisabled()
                                 .textInputAutocapitalization(.none)
                                 .onSubmit {
-                                    viewModel.addToHistory(query: viewModel.query)
-                                    viewModel.performSearch(query: viewModel.query)
+                                    let trimmed = viewModel.query.trimmingCharacters(in: .whitespacesAndNewlines)
+                                    guard !trimmed.isEmpty else { return }
+
+                                    if viewModel.query != trimmed {
+                                        viewModel.query = trimmed
+                                    }
+
+                                    viewModel.addToHistory(query: trimmed)
+                                    viewModel.performSearch(query: trimmed)
                                 }
                                 .transition(.move(edge: .trailing).combined(with: .opacity))
                             
@@ -92,6 +99,7 @@ struct SearchView: View {
                                 onSelect: { query in
                                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
                                     viewModel.query = query
+                                    viewModel.performSearch(query: query)
                                 },
                                 onClear: {
                                     viewModel.clearHistory()
@@ -149,6 +157,10 @@ struct SearchView: View {
             }
         }
         .ignoresSafeArea(edges: .top)
+        .task {
+            // Load history before view renders
+            await viewModel.refreshHistory()
+        }
         .onAppear {
             // Phase 3: Focus after animation - Quicker for better UX
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
@@ -198,9 +210,12 @@ struct HistoryListView: View {
             } header: {
                 HStack {
                     Text("Recent Searches")
+                        .foregroundColor(AppColors.primaryText)
                     Spacer()
                     Button("Clear", action: onClear)
                         .font(.caption)
+                        .foregroundColor(AppColors.primaryText)
+                        .foregroundColor(AppColors.primaryText)
                 }
             }
         }
