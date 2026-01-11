@@ -173,8 +173,8 @@ struct HomeView: View {
                         } // VStack (main content)
                         .padding(.top, 0)
                         
-                        // Bottom spacer for scrolling
-                        Color.clear.frame(height: 100)
+                        // Bottom spacer for scrolling - account for banner ad height (50) + extra space
+                        Color.clear.frame(height: bannerViewModel.isLoaded ? 70 : 20)
                     } // ScrollView
                 } // GeometryReader
                 .refreshable {
@@ -185,8 +185,8 @@ struct HomeView: View {
                 .ignoresSafeArea(.all, edges: .top) // Allow scrollview to go under header visually
                 .opacity(isSearchActive ? 0 : 1) // Only fade content
                 
-                // Banner Ad at Bottom (always visible, above safe area)
-                VStack {
+                // Banner Ad at Bottom (respects safe area)
+                VStack(spacing: 0) {
                     Spacer()
                     if bannerViewModel.isLoaded {
                         BannerAdView(viewModel: bannerViewModel)
@@ -194,7 +194,8 @@ struct HomeView: View {
                             .background(Color.white)
                     }
                 }
-                
+                .padding(.bottom, 8) // Respect safe area bottom
+
                 // Fixed Header with MaxY Measurement (Always visible, handles its own transitions)
                 HeaderView(
                     selectedTab: $selectedTab,

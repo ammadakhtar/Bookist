@@ -61,11 +61,14 @@ struct BookistApp: App {
         }
         
         // 2. Show Ad on Foreground (if splash is done and not already presenting something)
-        if newPhase == .active, isAppReady {
-            print("📱 App became active and app is ready")
-            
-            // Clear badge and check notifications
+        if newPhase == .active {
+            // Always clear badge immediately when app becomes active, regardless of splash state
             NotificationManager.shared.handleAppDidBecomeActive()
+            
+            // Only show ads after splash is complete
+            guard isAppReady else { return }
+            
+            print("📱 App became active and app is ready")
             
             // Check premium before showing app open ad
             guard !SubscriptionManager.shared.isPremium else {

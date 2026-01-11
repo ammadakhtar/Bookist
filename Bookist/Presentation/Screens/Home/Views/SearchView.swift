@@ -7,7 +7,8 @@ struct SearchView: View {
     var namespace: Namespace.ID
     
     @FocusState private var isFocused: Bool
-    @State private var animateContent: Bool = true
+    @State private var animateContent: Bool = false
+    @State private var isAnimationComplete: Bool = false
     
     var body: some View {
         ZStack(alignment: .top) {
@@ -27,38 +28,35 @@ struct SearchView: View {
                             .matchedGeometryEffect(id: "SearchIcon", in: namespace)
                             .frame(width: 24, height: 24)
                         
-                        // Text Field (Slide In Phase 1)
-                        // Grouped with the text field to match layout
-                        if animateContent {
-                            TextField("Search books or authors...", text: $viewModel.query)
-                                .focused($isFocused)
-                                .foregroundColor(AppColors.primaryText)
-                                .submitLabel(.search)
-                                .autocorrectionDisabled()
-                                .textInputAutocapitalization(.none)
-                                .onSubmit {
-                                    let trimmed = viewModel.query.trimmingCharacters(in: .whitespacesAndNewlines)
-                                    guard !trimmed.isEmpty else { return }
+                        // Text Field (Slide In Phase 1) - Always rendered, controlled by opacity
+                        TextField("Search books or authors...", text: $viewModel.query)
+                            .focused($isFocused)
+                            .foregroundColor(AppColors.primaryText)
+                            .submitLabel(.search)
+                            .autocorrectionDisabled()
+                            .textInputAutocapitalization(.none)
+                            .onSubmit {
+                                let trimmed = viewModel.query.trimmingCharacters(in: .whitespacesAndNewlines)
+                                guard !trimmed.isEmpty else { return }
 
-                                    if viewModel.query != trimmed {
-                                        viewModel.query = trimmed
-                                    }
+                                if viewModel.query != trimmed {
+                                    viewModel.query = trimmed
+                                }
 
-                                    viewModel.addToHistory(query: trimmed)
-                                    viewModel.performSearch(query: trimmed)
-                                }
-                                .transition(.move(edge: .trailing).combined(with: .opacity))
-                            
-                            if !viewModel.query.isEmpty {
-                                Button(action: {
-                                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                    viewModel.query = ""
-                                }) {
-                                    Image(systemName: "xmark.circle.fill")
-                                        .foregroundColor(AppColors.secondaryText)
-                                }
-                                .transition(.scale.combined(with: .opacity))
+                                viewModel.addToHistory(query: trimmed)
+                                viewModel.performSearch(query: trimmed)
                             }
+                            .opacity(animateContent ? 1 : 0)
+                        
+                        if !viewModel.query.isEmpty && animateContent {
+                            Button(action: {
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                viewModel.query = ""
+                            }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .foregroundColor(AppColors.secondaryText)
+                            }
+                            .transition(.scale.combined(with: .opacity))
                         }
                     }
                     .padding(.horizontal, 12)
@@ -74,96 +72,110 @@ struct SearchView: View {
                             .matchedGeometryEffect(id: "SearchBackground", in: namespace)
                     )
                     
-                    // Cancel Button (Slide In Phase 1)
-                    if animateContent {
-                        Button(action: closeSearch) {
-                            Text("Cancel")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(AppColors.primaryText)
-                                .padding(.leading, 12)
-                        }
-                        .transition(.move(edge: .trailing).combined(with: .opacity))
+                    // Cancel Button (Slide In Phase 1) - Always rendered, controlled by opacity
+                    Button(action: closeSearch) {
+                        Text("Cancel")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(AppColors.primaryText)
+                            .padding(.leading, 12)
                     }
+                    .opacity(animateContent ? 1 : 0)
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 60) // Match Header Padding
                 .padding(.bottom, 16)
                 
-                // Content (Fade Phase 2)
-                ZStack {
-                    if viewModel.query.isEmpty {
-                        // History View
-                        if !viewModel.history.isEmpty {
-                            HistoryListView(
-                                history: viewModel.history,
-                                onSelect: { query in
-                                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                    viewModel.query = query
-                                    viewModel.performSearch(query: query)
-                                },
-                                onClear: {
-                                    viewModel.clearHistory()
+                // Content (Fade Phase 2) - Only render after animation is mostly complete
+                if isAnimationComplete {
+                    ZStack {
+                        if viewModel.query.isEmpty {
+                            // History View - Only show after animation completes
+                            if !viewModel.history.isEmpty {
+                                HistoryListView(
+                                    history: viewModel.history,
+                                    onSelect: { query in
+                                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                        viewModel.query = query
+                                        viewModel.performSearch(query: query)
+                                    },
+                                    onClear: {
+                                        viewModel.clearHistory()
+                                    }
+                                )
+                            } else {
+                                // Empty State / Prompt
+                                VStack(spacing: 16) {
+                                    Spacer()
+                                    Image(systemName: "magnifyingglass")
+                                        .font(.system(size: 50))
+                                        .foregroundColor(.gray.opacity(0.3))
+                                        .padding(.bottom, 8)
+                                    Text("Search for any book with title or\nauthor name and start reading")
+                                        .multilineTextAlignment(.center)
+                                        .font(.system(size: 16))
+                                        .foregroundColor(.gray)
+                                    Spacer()
                                 }
-                            )
+                            }
                         } else {
-                            // Empty State / Prompt
-                            VStack(spacing: 16) {
-                                Spacer()
-                                Image(systemName: "magnifyingglass")
-                                    .font(.system(size: 50))
-                                    .foregroundColor(.gray.opacity(0.3))
-                                    .padding(.bottom, 8)
-                                Text("Search for any book with title or\nauthor name and start reading")
-                                    .multilineTextAlignment(.center)
-                                    .font(.system(size: 16))
-                                    .foregroundColor(.gray)
-                                Spacer()
-                            }
-                        }
-                    } else {
-                        // Results View
-                        if viewModel.isLoading {
-                            ScrollView {
-                                LazyVStack(spacing: 16) {
-                                    ForEach(0..<6, id: \.self) { _ in
-                                        SkeletonBookResultRow()
+                            // Results View
+                            if viewModel.isLoading {
+                                ScrollView {
+                                    LazyVStack(spacing: 16) {
+                                        ForEach(0..<6, id: \.self) { _ in
+                                            SkeletonBookResultRow()
+                                        }
                                     }
+                                    .padding(16)
                                 }
-                                .padding(16)
-                            }
-                        } else if let error = viewModel.error, viewModel.lastSearchedQuery == viewModel.query {
-                            Text(error).foregroundColor(.red).padding()
-                        } else if viewModel.results.isEmpty, viewModel.lastSearchedQuery == viewModel.query {
-                            VStack {
-                                Spacer()
-                                Text("No results found for \"\(viewModel.query)\"")
-                                    .foregroundColor(.gray)
-                                Spacer()
-                            }
-                        } else if !viewModel.results.isEmpty {
-                            ScrollView {
-                                LazyVStack(spacing: 16) {
-                                    ForEach(viewModel.results) { book in
-                                        BookResultRow(book: book, onTap: onBookTap)
+                            } else if let error = viewModel.error, viewModel.lastSearchedQuery == viewModel.query {
+                                Text(error).foregroundColor(.red).padding()
+                            } else if viewModel.results.isEmpty, viewModel.lastSearchedQuery == viewModel.query {
+                                VStack {
+                                    Spacer()
+                                    Text("No results found for \"\(viewModel.query)\"")
+                                        .foregroundColor(.gray)
+                                    Spacer()
+                                }
+                            } else if !viewModel.results.isEmpty {
+                                ScrollView {
+                                    LazyVStack(spacing: 16) {
+                                        ForEach(viewModel.results) { book in
+                                            BookResultRow(book: book, onTap: onBookTap)
+                                        }
                                     }
+                                    .padding(16)
                                 }
-                                .padding(16)
                             }
                         }
                     }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .transition(.opacity)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .opacity(animateContent ? 1 : 0) // Content Fade
             }
         }
         .ignoresSafeArea(edges: .top)
-        .task {
-            // Load history before view renders
-            await viewModel.refreshHistory()
-        }
         .onAppear {
-            // Phase 3: Focus after animation - Quicker for better UX
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            // CRITICAL: Clear history immediately to prevent stale data from triggering redraws
+            viewModel.history = []
+            isAnimationComplete = false
+            
+            // Phase 1: Start animating content immediately to fade in during matched geometry
+            withAnimation(.interactiveSpring(response: 0.9, dampingFraction: 0.8, blendDuration: 0.2)) {
+                animateContent = true
+            }
+            
+            // Phase 2: Mark animation complete and load history
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                isAnimationComplete = true
+                
+                Task {
+                    await viewModel.refreshHistory()
+                }
+            }
+            
+            // Phase 3: Focus AFTER animation completes to avoid triggering redraws during animation
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.05) {
                 isFocused = true
             }
         }

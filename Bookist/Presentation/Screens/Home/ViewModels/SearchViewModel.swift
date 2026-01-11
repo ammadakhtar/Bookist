@@ -18,7 +18,7 @@ class SearchViewModel: ObservableObject {
     
     init(fetchBooksUseCase: FetchBooksUseCaseProtocol? = nil,
          searchHistoryRepository: SearchHistoryRepositoryProtocol? = nil) {
-        
+
         let networkService = NetworkService.shared
         let bookRepo = BookRepository(networkService: networkService)
         
@@ -92,20 +92,26 @@ class SearchViewModel: ObservableObject {
     }
     
     func refreshHistory() async {
+        print("� refreshHistory called")
+        let startTime = Date()
         historyLoadTask?.cancel()
         historyLoadTask = Task {
             do {
+                print("🔍 Starting SwiftData history fetch")
                 let fetchedHistory = try await searchHistoryRepository.getHistory()
+                let elapsed = Date().timeIntervalSince(startTime)
+                print("🔍 History fetch completed in \(elapsed)s - \(fetchedHistory.count) items")
                 if !Task.isCancelled {
                     self.history = fetchedHistory
                 }
             } catch {
                 if !Task.isCancelled {
-                    print("Failed to fetch history: \(error)")
+                    print("🔍 Failed to fetch history: \(error)")
                 }
             }
         }
-        await historyLoadTask?.value
+        // Don't await - let it run asynchronously to avoid blocking the UI/animation
+        print("🔍 refreshHistory returned (task running in background)")
     }
     
     func clearHistory() {

@@ -31,6 +31,33 @@ struct ReadingStreakCalendar: View {
             
             // Month Picker Trigger
             Menu {
+                // Year Picker (placed first for better UX)
+                Picker("Year", selection: Binding(
+                    get: { calendar.component(.year, from: selectedMonth) },
+                    set: { year in
+                        let currentMonth = calendar.component(.month, from: selectedMonth)
+                        let today = Date()
+                        let currentYear = calendar.component(.year, from: today)
+                        let currentMonthInYear = calendar.component(.month, from: today)
+                        
+                        // Determine valid month range for selected year
+                        let startMonth = year == 2025 ? 12 : 1
+                        let endMonth = year == currentYear ? currentMonthInYear : 12
+                        
+                        // Clamp current month to valid range for the selected year
+                        let validMonth = min(max(currentMonth, startMonth), endMonth)
+                        
+                        if let date = calendar.date(from: DateComponents(year: year, month: validMonth, day: 1)) {
+                            selectedMonth = date
+                        }
+                    }
+                )) {
+                    let currentYear = calendar.component(.year, from: Date())
+                    ForEach(2025...currentYear, id: \.self) { year in
+                        Text(String(format: "%d", year)).tag(year)
+                    }
+                }
+                
                 // Month Picker
                 Picker("Month", selection: Binding(
                     get: { calendar.component(.month, from: selectedMonth) },
@@ -45,28 +72,12 @@ struct ReadingStreakCalendar: View {
                     let currentYear = calendar.component(.year, from: today)
                     let currentMonth = calendar.component(.month, from: today)
                     
+                    // Determine the valid month range for the selected year
                     let startMonth = year == 2025 ? 12 : 1
                     let endMonth = year == currentYear ? currentMonth : 12
                     
-                    let finalStart = min(startMonth, endMonth)
-                    
-                    ForEach(finalStart...endMonth, id: \.self) { month in
+                    ForEach(startMonth...endMonth, id: \.self) { month in
                         Text(calendar.monthSymbols[month-1]).tag(month)
-                    }
-                }
-                
-                // Year Picker
-                Picker("Year", selection: Binding(
-                    get: { calendar.component(.year, from: selectedMonth) },
-                    set: { year in
-                        if let date = calendar.date(bySetting: .year, value: year, of: selectedMonth) {
-                            selectedMonth = date
-                        }
-                    }
-                )) {
-                    let currentYear = calendar.component(.year, from: Date())
-                    ForEach(2025...currentYear, id: \.self) { year in
-                        Text(String(format: "%d", year)).tag(year)
                     }
                 }
             } label: {

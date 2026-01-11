@@ -156,8 +156,11 @@ class NotificationManager: NSObject, ObservableObject {
     func handleAppDidBecomeActive() {
         print("📱 App became active - clearing badge and checking notifications")
         
-        // Clear badge immediately when app becomes active
+        // Clear badge immediately when app becomes active (synchronously)
         UIApplication.shared.applicationIconBadgeNumber = 0
+        
+        // Also clear delivered notifications to ensure badge resets
+        notificationCenter.removeAllDeliveredNotifications()
         
         Task { @MainActor in
             // Also use the new API for iOS 16+
