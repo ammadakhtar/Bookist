@@ -156,7 +156,7 @@ struct PaywallView: View {
                 .opacity(isBreathing ? 0.9 : 1.0)
                 .animation(isBreathing ? Animation.easeInOut(duration: 1.5).repeatForever(autoreverses: true) : .default, value: isBreathing)
 
-            Text("Bookist Premium")
+            Text("BookPad Premium")
                 .font(.system(size: 32, weight: .bold))
                 .foregroundColor(.white)
 
